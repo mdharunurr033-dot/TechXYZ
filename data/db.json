@@ -289,7 +289,7 @@
     {
       "id": "faq-2",
       "question": "How do I place an order?",
-      "answer": "Simply browse our packages (Entry, Core, Premium, or VIP), choose the package that fits your goals, click \"Order Now\", enter your name, WhatsApp number, and your Facebook page or video link, and complete your payment securely via Nagorik Pay (bKash, Nagad, Rocket, or Card)."
+      "answer": "Simply browse our packages (Entry, Core, Premium, or VIP), choose the package that fits your goals, click \"Order Now\", enter your name, WhatsApp number, client location, and your Facebook page or video link, and submit your payment TrxID via bKash, Nagad, or Rocket. Our Admin verifies the order and starts delivery."
     },
     {
       "id": "faq-3",
@@ -299,12 +299,12 @@
     {
       "id": "faq-4",
       "question": "How can I pay?",
-      "answer": "We accept automated payments through Nagorik Pay, which supports bKash, Nagad, Rocket, Upay, and major Bangladeshi debit/credit cards. Transactions are processed instantly and verified automatically."
+      "answer": "We accept payments through Bangladesh mobile banking including bKash, Nagad, and Rocket (Send Money personal). Send the amount to our provided numbers and enter your Transaction ID (TrxID) in the form."
     },
     {
       "id": "faq-5",
-      "question": "Is online payment secure?",
-      "answer": "Yes, 100%. All transactions are processed through encrypted SSL protocols directly via Nagorik Pay. We never store your card numbers or PINs. Every order receives an immediate verification receipt."
+      "question": "Is payment and ordering secure?",
+      "answer": "Yes, 100%. Payments are made directly to our official mobile banking accounts with your unique TrxID. We never ask for your passwords, and every order is assigned a verifiable Order Number that you can track live."
     },
     {
       "id": "faq-6",

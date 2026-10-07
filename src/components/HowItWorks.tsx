@@ -22,7 +22,7 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({ onOrderNowClick }) => {
     {
       num: '03',
       title: 'Complete Payment & Get Started',
-      description: 'Pay securely using Nagorik Pay (bKash, Nagad, Rocket, Upay or Card). Your campaign starts delivering within 15–60 minutes.',
+      description: 'Pay securely using mobile banking (bKash, Nagad, Rocket) and submit TrxID. Admin verifies payment and campaign begins delivering.',
       icon: CreditCard,
     },
   ];

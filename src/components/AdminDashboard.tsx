@@ -7,6 +7,7 @@ import {
   updateOrderStatus,
   updatePackage,
   updateSettings,
+  uploadAdminVideo,
 } from '../lib/api';
 import {
   ShieldCheck,
@@ -33,6 +34,12 @@ import {
   Clock,
   Layers,
   Settings as SettingsIcon,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  FileVideo,
+  RefreshCw,
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -79,6 +86,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Settings & Media form state
   const [settingsForm, setSettingsForm] = useState<SiteSettings>(siteSettings);
   const [settingsSuccess, setSettingsSuccess] = useState(false);
+
+  // Video uploader system states
+  const [isUploadingHeroVideo, setIsUploadingHeroVideo] = useState(false);
+  const [uploadingReelIndex, setUploadingReelIndex] = useState<number | null>(null);
+  const [uploadStatusMessage, setUploadStatusMessage] = useState<string | null>(null);
+  const [heroPreviewMuted, setHeroPreviewMuted] = useState(true);
+  const [reelsPreviewMuted, setReelsPreviewMuted] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     setSettingsForm(siteSettings);
@@ -225,6 +239,84 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
+  const handleHeroVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingHeroVideo(true);
+    setUploadStatusMessage(`Uploading Hero Video: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)...`);
+    try {
+      const result = await uploadAdminVideo(token, file);
+      if (result.success && result.videoUrl) {
+        setSettingsForm((prev) => ({ ...prev, heroVideoUrl: result.videoUrl }));
+        setUploadStatusMessage('Hero video uploaded successfully! Click Save Media Settings Live to apply.');
+      }
+    } catch (err: unknown) {
+      console.warn('Server upload error, applying device data fallback:', err);
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          setSettingsForm((prev) => ({ ...prev, heroVideoUrl: reader.result as string }));
+          setUploadStatusMessage('Hero video loaded from device. Click Save Media Settings Live to apply.');
+        }
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setIsUploadingHeroVideo(false);
+      setTimeout(() => setUploadStatusMessage(null), 6000);
+    }
+  };
+
+  const handleHeroPosterUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setSettingsForm((prev) => ({ ...prev, heroVideoPoster: reader.result as string }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleReelVideoUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingReelIndex(index);
+    setUploadStatusMessage(`Uploading Reel #${index + 1} video: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)...`);
+    try {
+      const result = await uploadAdminVideo(token, file);
+      if (result.success && result.videoUrl) {
+        handleReelChange(index, 'videoUrl', result.videoUrl);
+        setUploadStatusMessage(`Reel #${index + 1} video uploaded successfully!`);
+      }
+    } catch (err: unknown) {
+      console.warn('Server upload error, applying device data fallback:', err);
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          handleReelChange(index, 'videoUrl', reader.result as string);
+          setUploadStatusMessage(`Reel #${index + 1} video loaded from device.`);
+        }
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setUploadingReelIndex(null);
+      setTimeout(() => setUploadStatusMessage(null), 6000);
+    }
+  };
+
+  const handleReelThumbnailUpload = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        handleReelChange(index, 'thumbnail', reader.result as string);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const copyToClipboard = (text: string, id: string) => {
     if (navigator?.clipboard) {
       navigator.clipboard.writeText(text);
@@ -343,8 +435,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {/* Dashboard Top Header Bar */}
         <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-slate-800 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black shadow-inner">
-              TP
+            <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shadow-md border border-slate-700 shrink-0">
+              <img
+                src="/logo.png"
+                alt="Tech Promotion BD"
+                className="w-full h-full object-contain"
+              />
             </div>
             <div>
               <h2 className="text-base font-extrabold text-white flex items-center gap-2">
@@ -712,129 +808,453 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           )}
 
-          {/* TAB 3: MEDIA (Hero Video & 3 FB Reels) */}
+          {/* TAB 3: MEDIA (Hero Video & 3 FB Reels Video Uploader System) */}
           {activeTab === 'media' && (
-            <form onSubmit={handleSaveSettings} className="space-y-6 max-w-3xl">
+            <form onSubmit={handleSaveSettings} className="space-y-6 max-w-4xl">
               {settingsSuccess && (
-                <div className="p-3 bg-emerald-50 text-emerald-700 text-xs rounded-xl flex items-center gap-2 border border-emerald-200">
-                  <CheckCircle className="w-4 h-4" />
-                  <span>Media configuration saved and live on website!</span>
+                <div className="p-3.5 bg-emerald-50 text-emerald-800 text-xs rounded-2xl flex items-center gap-2 border border-emerald-200 shadow-2xs">
+                  <CheckCircle className="w-4 h-4 text-emerald-600" />
+                  <span className="font-bold">Media configuration saved! Homepage Hero and Reels are instantly updated and live.</span>
                 </div>
               )}
 
-              {/* Hero Video Configuration */}
-              <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-2xs space-y-4">
-                <div className="border-b border-slate-100 pb-3">
-                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <Video className="w-5 h-5 text-blue-600" />
-                    <span>Hero Video Configuration (Supports Min 500MB Video)</span>
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Provide a direct MP4 / WebM / CDN video stream link of any size (500MB+ supported via direct HTTP streaming).
+              {uploadStatusMessage && (
+                <div className="p-3.5 bg-blue-50 text-blue-800 text-xs rounded-2xl flex items-center justify-between gap-2 border border-blue-200 animate-in fade-in">
+                  <div className="flex items-center gap-2">
+                    <RefreshCw className={`w-4 h-4 text-blue-600 ${isUploadingHeroVideo || uploadingReelIndex !== null ? 'animate-spin' : ''}`} />
+                    <span className="font-semibold">{uploadStatusMessage}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setUploadStatusMessage(null)}
+                    className="p-1 text-blue-500 hover:text-blue-800 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {/* 1. HERO VIDEO UPLOADER SYSTEM */}
+              <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-2xs space-y-5">
+                <div className="border-b border-slate-100 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                      <Video className="w-5 h-5 text-blue-600" />
+                      <span>Hero Section Video (Direct Uploader & Instant Player)</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Upload from device or enter video URL. Supports MP4, WebM, large 500MB+ streams.
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-[11px] font-bold border border-blue-200 shrink-0 self-start sm:self-auto">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Auto Start without sound · Sound on click</span>
+                  </span>
+                </div>
+
+                {/* Hero Formula Rule Notification */}
+                <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 text-xs text-slate-700 space-y-1">
+                  <strong className="text-blue-600 block">📌 Hero Playback Formula:</strong>
+                  <p className="text-[11px] text-slate-600">
+                    Site open hole video auto-start hobe <strong>without sound (muted)</strong>. Visitor video te click korle kono pop-up chhara <strong>sound soho direct play hobe</strong>.
                   </p>
                 </div>
 
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Hero Video URL (MP4 / WebM / Direct Link)
+                {/* Live Hero Video Preview Player with Sound Test */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-700">Live 16:9 Video Preview:</span>
+                    <button
+                      type="button"
+                      onClick={() => setHeroPreviewMuted(!heroPreviewMuted)}
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 transition-colors border cursor-pointer ${
+                        heroPreviewMuted
+                          ? 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
+                          : 'bg-emerald-600 text-white border-emerald-500'
+                      }`}
+                    >
+                      {heroPreviewMuted ? (
+                        <>
+                          <VolumeX className="w-3 h-3 text-slate-500" />
+                          <span>Preview Muted (Site Open Default)</span>
+                        </>
+                      ) : (
+                        <>
+                          <Volume2 className="w-3 h-3 text-white animate-pulse" />
+                          <span>Sound ON (Visitor Clicked Test)</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="relative aspect-16/9 w-full rounded-2xl overflow-hidden bg-black border border-slate-800 shadow-md">
+                    {settingsForm.heroVideoUrl ? (
+                      <video
+                        key={settingsForm.heroVideoUrl}
+                        src={settingsForm.heroVideoUrl}
+                        poster={settingsForm.heroVideoPoster}
+                        autoPlay
+                        muted={heroPreviewMuted}
+                        loop
+                        playsInline
+                        controls
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full text-slate-400 text-xs p-4 text-center">
+                        <FileVideo className="w-8 h-8 text-slate-500 mb-2" />
+                        <span>No video URL configured yet. Upload a video file or choose a preset below.</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Hero Video Controls: Upload Button & Direct URL */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                  {/* Device File Uploader */}
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <label className="block text-xs font-bold text-slate-800">
+                      Option A: Upload Video File from Device
                     </label>
+                    <p className="text-[11px] text-slate-500">
+                      Select MP4 or WebM video file from your computer or phone.
+                    </p>
+                    <label
+                      className={`cursor-pointer w-full py-2.5 px-4 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-2xs ${
+                        isUploadingHeroVideo
+                          ? 'bg-blue-100 text-blue-700 border-blue-300 pointer-events-none'
+                          : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300'
+                      }`}
+                    >
+                      <Upload className={`w-4 h-4 text-blue-600 ${isUploadingHeroVideo ? 'animate-bounce' : ''}`} />
+                      <span>{isUploadingHeroVideo ? 'Uploading Video...' : 'Choose Video File from Device'}</span>
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime,video/*"
+                        className="hidden"
+                        disabled={isUploadingHeroVideo}
+                        onChange={handleHeroVideoUpload}
+                      />
+                    </label>
+                  </div>
+
+                  {/* Direct Video URL */}
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <label className="block text-xs font-bold text-slate-800">
+                      Option B: Direct Video URL or CDN Stream
+                    </label>
+                    <p className="text-[11px] text-slate-500">
+                      Paste direct link to MP4/WebM video hosted anywhere.
+                    </p>
                     <input
                       type="url"
                       value={settingsForm.heroVideoUrl || ''}
                       onChange={(e) => setSettingsForm({ ...settingsForm, heroVideoUrl: e.target.value })}
-                      placeholder="https://example.com/videos/promo-500mb.mp4 (leave blank for poster preview)"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-600"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Hero Video Poster Image URL
-                    </label>
-                    <input
-                      type="text"
-                      value={settingsForm.heroVideoPoster || ''}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, heroVideoPoster: e.target.value })}
-                      placeholder="/src/assets/images/hero_cinematic_banner_1791233752016.jpg"
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono text-slate-800"
+                      placeholder="https://.../video.mp4"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono bg-white"
                     />
                   </div>
                 </div>
+
+                {/* Quick Presets for Hero Video */}
+                <div className="pt-1">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+                    Or Select High-Speed Ready Demo Videos:
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {[
+                      {
+                        label: 'Cinematic Blazes (Default)',
+                        url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+                      },
+                      {
+                        label: 'Organic Growth Showcase',
+                        url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+                      },
+                      {
+                        label: 'Fast Delivery Campaign',
+                        url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4',
+                      },
+                    ].map((demo, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setSettingsForm({ ...settingsForm, heroVideoUrl: demo.url })}
+                        className={`p-2 rounded-xl border text-xs text-left transition-all cursor-pointer ${
+                          settingsForm.heroVideoUrl === demo.url
+                            ? 'bg-blue-50 border-blue-500 text-blue-900 font-bold ring-1 ring-blue-500'
+                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className="block truncate font-semibold">{demo.label}</span>
+                        <span className="text-[10px] text-slate-400 block truncate font-mono mt-0.5">{demo.url}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Hero Poster Image */}
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-slate-800">
+                      Hero Video Poster Image (Thumbnail before load)
+                    </label>
+                    <label className="cursor-pointer text-[11px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                      <Upload className="w-3 h-3" />
+                      <span>Upload Poster Image</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleHeroPosterUpload}
+                      />
+                    </label>
+                  </div>
+                  <input
+                    type="text"
+                    value={settingsForm.heroVideoPoster || ''}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, heroVideoPoster: e.target.value })}
+                    placeholder="/src/assets/images/hero_cinematic_banner_1791233752016.jpg"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono bg-white"
+                  />
+                </div>
               </div>
 
-              {/* 3 Facebook Reels Sized Cards */}
+              {/* 2. CLIENT GROWTH STORIES & LIVE REELS SECTION (Same Formula) */}
               <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-2xs space-y-6">
-                <div className="border-b border-slate-100 pb-3">
-                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <span>3 Facebook Reels Sized Video Cards (9:16 Vertical)</span>
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Manage the 3 vertical story reels displayed on the homepage. Update titles, subtitles, view counts, and video URLs.
+                <div className="border-b border-slate-100 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-blue-600" />
+                      <span>Client Growth Stories & Live Reels (Same Formula)</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Manage the 3 vertical 9:16 reels displayed on the homepage with video uploader system and sound test.
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-bold border border-emerald-200 shrink-0 self-start sm:self-auto">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Auto Start without sound · Sound on click</span>
+                  </span>
+                </div>
+
+                {/* Reels Formula Rule Notification */}
+                <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 text-xs text-slate-700 space-y-1">
+                  <strong className="text-blue-600 block">📌 Reels Formula Rule:</strong>
+                  <p className="text-[11px] text-slate-600">
+                    Home page open hole vertical reel video gulo <strong>without sound (muted) auto-start hobe</strong>. Customer je kono reel e click korle <strong>sound soho instant play hobe kono pop-up chara</strong>!
                   </p>
                 </div>
 
+                {/* 3 Reels Cards with 9:16 Vertical Live Preview & Device Uploader */}
                 <div className="space-y-6">
-                  {(settingsForm.reels || []).map((reel, idx) => (
-                    <div key={reel.id || idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-black uppercase text-blue-600">Reel #{idx + 1}</span>
-                        <span className="text-[11px] text-slate-400 font-mono">ID: {reel.id}</span>
-                      </div>
+                  {(settingsForm.reels || []).slice(0, 3).map((reel, idx) => {
+                    const isMuted = reelsPreviewMuted[idx] ?? true;
+                    const isUploadingThisReel = uploadingReelIndex === idx;
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-[11px] font-semibold text-slate-700 mb-1">Reel Title</label>
-                          <input
-                            type="text"
-                            value={reel.title}
-                            onChange={(e) => handleReelChange(idx, 'title', e.target.value)}
-                            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold"
-                          />
+                    return (
+                      <div
+                        key={reel.id || idx}
+                        className="p-5 bg-slate-50 rounded-3xl border border-slate-200 space-y-4"
+                      >
+                        <div className="flex items-center justify-between border-b border-slate-200/70 pb-2.5">
+                          <div className="flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center">
+                              {idx + 1}
+                            </span>
+                            <span className="text-xs font-black uppercase tracking-wider text-slate-900">
+                              Reel #{idx + 1} · {reel.title || 'Untitled Reel'}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-mono">ID: {reel.id}</span>
                         </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-slate-700 mb-1">Subtitle / Bengali Description</label>
-                          <input
-                            type="text"
-                            value={reel.subtitle}
-                            onChange={(e) => handleReelChange(idx, 'subtitle', e.target.value)}
-                            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs"
-                          />
-                        </div>
-                      </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-[11px] font-semibold text-slate-700 mb-1">Video Stream URL</label>
-                          <input
-                            type="url"
-                            value={reel.videoUrl || ''}
-                            onChange={(e) => handleReelChange(idx, 'videoUrl', e.target.value)}
-                            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-mono"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-semibold text-slate-700 mb-1">Views Badge</label>
-                          <input
-                            type="text"
-                            value={reel.views || ''}
-                            onChange={(e) => handleReelChange(idx, 'views', e.target.value)}
-                            className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs"
-                          />
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
+                          {/* Left: 9:16 Vertical Video Preview with Sound Tester */}
+                          <div className="md:col-span-4 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-bold text-slate-700">9:16 Live Preview:</span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setReelsPreviewMuted((prev) => ({ ...prev, [idx]: !isMuted }))
+                                }
+                                className={`px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1 border cursor-pointer ${
+                                  isMuted
+                                    ? 'bg-slate-200 text-slate-700 border-slate-300'
+                                    : 'bg-emerald-600 text-white border-emerald-500'
+                                }`}
+                              >
+                                {isMuted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3 animate-pulse" />}
+                                <span>{isMuted ? 'Muted' : 'Sound ON'}</span>
+                              </button>
+                            </div>
+
+                            <div className="relative aspect-9/16 max-w-[200px] mx-auto rounded-2xl overflow-hidden bg-black border border-slate-800 shadow-md">
+                              {reel.videoUrl ? (
+                                <video
+                                  key={reel.videoUrl}
+                                  src={reel.videoUrl}
+                                  poster={reel.thumbnail}
+                                  autoPlay
+                                  muted={isMuted}
+                                  loop
+                                  playsInline
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <img
+                                  src={reel.thumbnail}
+                                  alt={reel.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              )}
+                              <div className="absolute top-2 left-2 right-2 flex justify-between text-[10px] text-white font-bold pointer-events-none">
+                                <span className="bg-black/60 px-1.5 py-0.5 rounded-md">{reel.views || '100K+'}</span>
+                                <span className="bg-black/60 px-1.5 py-0.5 rounded-md">{reel.duration || '0:45'}</span>
+                              </div>
+                              <div className="absolute bottom-2 left-2 right-2 text-white text-[10px] font-semibold pointer-events-none drop-shadow-md">
+                                <p className="truncate font-bold">{reel.title}</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Right: Reel Inputs & Video/Thumbnail Uploaders */}
+                          <div className="md:col-span-8 space-y-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                                  Reel Title
+                                </label>
+                                <input
+                                  type="text"
+                                  value={reel.title}
+                                  onChange={(e) => handleReelChange(idx, 'title', e.target.value)}
+                                  placeholder="e.g. 500K Views Delivery Proof"
+                                  className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                                  Subtitle / Bengali Description
+                                </label>
+                                <input
+                                  type="text"
+                                  value={reel.subtitle}
+                                  onChange={(e) => handleReelChange(idx, 'subtitle', e.target.value)}
+                                  placeholder="e.g. ১০০% অর্গানিক বুস্ট ও লাইভ ভিউ কাউন্ট"
+                                  className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Video Uploader & URL for Reel */}
+                            <div className="p-3 bg-white rounded-2xl border border-slate-200 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <label className="block text-[11px] font-bold text-slate-800">
+                                  Reel Video Source (Upload or URL)
+                                </label>
+                                <label
+                                  className={`cursor-pointer px-2.5 py-1 rounded-lg border text-[11px] font-bold flex items-center gap-1.5 transition-colors ${
+                                    isUploadingThisReel
+                                      ? 'bg-blue-100 text-blue-700 border-blue-300 pointer-events-none'
+                                      : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                                  }`}
+                                >
+                                  <Upload className={`w-3.5 h-3.5 text-blue-600 ${isUploadingThisReel ? 'animate-bounce' : ''}`} />
+                                  <span>{isUploadingThisReel ? 'Uploading...' : 'Upload Reel Video from Device'}</span>
+                                  <input
+                                    type="file"
+                                    accept="video/*"
+                                    className="hidden"
+                                    disabled={isUploadingThisReel}
+                                    onChange={(e) => handleReelVideoUpload(idx, e)}
+                                  />
+                                </label>
+                              </div>
+                              <input
+                                type="url"
+                                value={reel.videoUrl || ''}
+                                onChange={(e) => handleReelChange(idx, 'videoUrl', e.target.value)}
+                                placeholder="https://example.com/reel-vertical.mp4"
+                                className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-mono bg-white"
+                              />
+                            </div>
+
+                            {/* Thumbnail Uploader & URL */}
+                            <div className="p-3 bg-white rounded-2xl border border-slate-200 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <label className="block text-[11px] font-bold text-slate-800">
+                                  Thumbnail / Poster Image
+                                </label>
+                                <label className="cursor-pointer px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                                  <Upload className="w-3.5 h-3.5 text-slate-500" />
+                                  <span>Upload Thumbnail</span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => handleReelThumbnailUpload(idx, e)}
+                                  />
+                                </label>
+                              </div>
+                              <input
+                                type="text"
+                                value={reel.thumbnail}
+                                onChange={(e) => handleReelChange(idx, 'thumbnail', e.target.value)}
+                                placeholder="/src/assets/images/reel_thumb.jpg or https://..."
+                                className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-mono bg-white"
+                              />
+                            </div>
+
+                            {/* Views & Duration Badges */}
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                                  Views Badge Display
+                                </label>
+                                <input
+                                  type="text"
+                                  value={reel.views || ''}
+                                  onChange={(e) => handleReelChange(idx, 'views', e.target.value)}
+                                  placeholder="e.g. 250K+ Views"
+                                  className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white font-semibold"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                                  Duration Display
+                                </label>
+                                <input
+                                  type="text"
+                                  value={reel.duration || ''}
+                                  onChange={(e) => handleReelChange(idx, 'duration', e.target.value)}
+                                  placeholder="e.g. 0:45"
+                                  className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white font-mono"
+                                />
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="pt-2">
+              {/* Save All Media Settings Live Button */}
+              <div className="pt-2 sticky bottom-0 bg-slate-50/90 backdrop-blur-md p-4 rounded-2xl border border-slate-200 shadow-lg flex items-center justify-between">
+                <div className="text-xs text-slate-600 font-medium hidden sm:block">
+                  Changes save to database immediately and broadcast to all site visitors.
+                </div>
                 <button
                   type="submit"
-                  className="py-2.5 px-5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center gap-2 cursor-pointer shadow-sm"
+                  className="py-3 px-8 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-md transition-all ml-auto"
                 >
                   <Save className="w-4 h-4" />
-                  <span>Save Media Settings Live</span>
+                  <span>Save Media Settings Live (Instant Website Sync)</span>
                 </button>
               </div>
             </form>

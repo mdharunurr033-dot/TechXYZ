@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Play, Pause, Volume2, VolumeX, ArrowRight } from 'lucide-react';
 
 interface HeroSectionProps {
@@ -12,13 +12,39 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   heroVideoUrl,
   heroVideoPoster = '/src/assets/images/hero_cinematic_banner_1791233752016.jpg',
 }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  const togglePlay = () => {
+  const activeVideoUrl =
+    heroVideoUrl && heroVideoUrl.trim()
+      ? heroVideoUrl.trim()
+      : 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+
+  // Site open: auto start video without sound immediately
+  useEffect(() => {
     if (videoRef.current) {
-      if (isPlaying) {
+      videoRef.current.muted = true;
+      videoRef.current
+        .play()
+        .then(() => setIsPlaying(true))
+        .catch(() => {
+          setIsPlaying(true);
+        });
+    }
+  }, [activeVideoUrl]);
+
+  const handleHeroVideoClick = () => {
+    if (videoRef.current) {
+      if (isMuted || videoRef.current.muted) {
+        // Automatically unmute and play with sound right here without popup
+        videoRef.current.muted = false;
+        videoRef.current.volume = 1.0;
+        setIsMuted(false);
+        if (videoRef.current.paused) {
+          videoRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(true));
+        }
+      } else if (isPlaying) {
         videoRef.current.pause();
         setIsPlaying(false);
       } else {
@@ -32,8 +58,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
+      const nextMuted = !isMuted;
+      videoRef.current.muted = nextMuted;
+      setIsMuted(nextMuted);
     } else {
       setIsMuted(!isMuted);
     }
@@ -85,43 +112,33 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           {/* Right Column: 16:9 Video Showcase with Min 500MB Video Support */}
           <div className="lg:col-span-6">
             <div
-              onClick={togglePlay}
+              onClick={handleHeroVideoClick}
               className="relative aspect-16/9 w-full rounded-3xl overflow-hidden bg-black shadow-2xl border border-slate-900 group cursor-pointer"
             >
-              {heroVideoUrl ? (
-                <video
-                  ref={videoRef}
-                  src={heroVideoUrl}
-                  poster={heroVideoPoster}
-                  muted={isMuted}
-                  loop
-                  playsInline
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <img
-                  src={heroVideoPoster}
-                  alt="Tech Promotion BD Video Campaign"
-                  referrerPolicy="no-referrer"
-                  className={`w-full h-full object-cover transition-transform duration-700 ${
-                    isPlaying ? 'scale-105 filter brightness-110' : 'group-hover:scale-102'
-                  }`}
-                />
-              )}
+              <video
+                ref={videoRef}
+                src={activeVideoUrl}
+                poster={heroVideoPoster}
+                autoPlay
+                muted={isMuted}
+                loop
+                playsInline
+                className="w-full h-full object-cover"
+              />
 
               {/* Dark subtle gradient scrim */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/50 pointer-events-none" />
 
-              {/* Top-Left: Glowing Cyan Brand Insignia */}
-              <div className="absolute top-5 left-5 z-20 flex items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-cyan-400/20 backdrop-blur-md border border-cyan-400/40 flex items-center justify-center shadow-lg">
-                  <svg viewBox="0 0 24 24" className="w-6 h-6 text-cyan-400 fill-cyan-400">
-                    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2" />
-                    <path d="M7 12a5 5 0 0 1 10 0" stroke="currentColor" strokeWidth="2" />
-                    <circle cx="12" cy="12" r="2.5" fill="currentColor" />
-                  </svg>
+              {/* Top-Left: Official Brand Logo Badge */}
+              <div className="absolute top-5 left-5 z-20 flex items-center gap-2.5">
+                <div className="w-12 h-12 rounded-2xl bg-white/95 p-1 backdrop-blur-md border border-white/60 flex items-center justify-center shadow-lg">
+                  <img
+                    src="/logo.png"
+                    alt="Tech Promotion BD"
+                    className="w-full h-full object-contain"
+                  />
                 </div>
-                <span className="text-xs font-bold uppercase tracking-wider text-cyan-300 drop-shadow-sm">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-white drop-shadow-md">
                   Tech Promotion BD
                 </span>
               </div>
@@ -147,15 +164,26 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 </p>
               </div>
 
-              {/* Video control buttons (Mute/Unmute) */}
+              {/* Video control buttons (Mute/Unmute Pill) */}
               <div className="absolute bottom-5 left-5 z-20 flex items-center gap-2">
                 <button
                   type="button"
                   onClick={toggleMute}
-                  className="p-2 rounded-full bg-black/50 hover:bg-black/70 text-white backdrop-blur-md transition-colors"
-                  aria-label={isMuted ? 'Unmute' : 'Mute'}
+                  className="px-3 py-1.5 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition-all flex items-center gap-1.5 text-xs font-bold border border-white/20 shadow-lg cursor-pointer"
+                  aria-label={isMuted ? 'Unmute video' : 'Mute video'}
+                  title={isMuted ? 'Click to play with sound' : 'Mute sound'}
                 >
-                  {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                  {isMuted ? (
+                    <>
+                      <VolumeX className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Sound OFF (Click to Unmute)</span>
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                      <span>Sound ON</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>

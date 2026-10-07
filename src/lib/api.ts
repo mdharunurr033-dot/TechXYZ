@@ -234,3 +234,33 @@ export async function updateSettings(token: string, settings: Partial<SiteSettin
   }
   return updated;
 }
+
+export async function uploadAdminVideo(
+  token: string,
+  file: File
+): Promise<{ success: boolean; videoUrl: string; filename: string }> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const videoData = e.target?.result as string;
+        const res = await fetch(`${BASE_URL}/api/admin/upload-video`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ videoData, filename: file.name }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to upload video');
+        resolve(data);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = () => reject(new Error('Failed to read video file from disk.'));
+    reader.readAsDataURL(file);
+  });
+}
+

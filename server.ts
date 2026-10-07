@@ -129,8 +129,14 @@ const activeAdminTokens = new Set<string>();
 async function startServer() {
   const app = express();
 
-  app.use(express.json({ limit: '50mb' }));
-  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+  app.use(express.json({ limit: '100mb' }));
+  app.use(express.urlencoded({ limit: '100mb', extended: true }));
+
+  const UPLOAD_DIR = path.join(__dirname, 'public', 'uploads');
+  if (!fs.existsSync(UPLOAD_DIR)) {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  }
+  app.use('/uploads', express.static(UPLOAD_DIR));
 
   // Helper auth middleware
   function requireAdmin(req: Request, res: Response, next: NextFunction) {
@@ -565,6 +571,47 @@ async function startServer() {
     db.settings = { ...db.settings, ...req.body };
     saveDb();
     res.json(db.settings);
+  });
+
+  // Admin: Upload Video (Supports direct device MP4/WebM uploads)
+  app.post('/api/admin/upload-video', requireAdmin, (req: Request, res: Response) => {
+    try {
+      const { videoData, filename } = req.body;
+      if (!videoData || typeof videoData !== 'string') {
+        return res.status(400).json({ error: 'Video data required.' });
+      }
+
+      const videosFolder = path.join(UPLOAD_DIR, 'videos');
+      if (!fs.existsSync(videosFolder)) {
+        fs.mkdirSync(videosFolder, { recursive: true });
+      }
+
+      let buffer: Buffer;
+      if (videoData.startsWith('data:')) {
+        const base64Content = videoData.split(';base64,').pop() || '';
+        buffer = Buffer.from(base64Content, 'base64');
+      } else {
+        buffer = Buffer.from(videoData, 'base64');
+      }
+
+      const ext = filename ? path.extname(filename) : '.mp4';
+      const cleanExt = ext && ext.length <= 5 ? ext : '.mp4';
+      const cleanFilename = `video_${Date.now()}_${Math.random().toString(36).substring(2, 7)}${cleanExt}`;
+      const filePath = path.join(videosFolder, cleanFilename);
+
+      fs.writeFileSync(filePath, buffer);
+
+      const videoUrl = `/uploads/videos/${cleanFilename}`;
+      res.json({
+        success: true,
+        videoUrl,
+        filename: cleanFilename,
+        sizeBytes: buffer.length,
+      });
+    } catch (err: unknown) {
+      console.error('Video upload error:', err);
+      res.status(500).json({ error: 'Failed to process uploaded video.' });
+    }
   });
 
   // Admin: FAQ Management

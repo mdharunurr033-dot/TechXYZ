@@ -11,7 +11,7 @@ import { WhyChooseUs } from './components/WhyChooseUs';
 import { FAQSection } from './components/FAQSection';
 import { Footer } from './components/Footer';
 import { MobileStickyCTA } from './components/MobileStickyCTA';
-import { OrderModal } from './components/OrderModal';
+import { OrderPage } from './components/OrderPage';
 import { OrderSuccessModal } from './components/OrderSuccessModal';
 import { TrackOrderModal } from './components/TrackOrderModal';
 import { AdminDashboard } from './components/AdminDashboard';
@@ -22,8 +22,16 @@ export default function App() {
   const [settings, setSettings] = useState<SiteSettings>(INITIAL_SETTINGS);
   const [faqs, setFaqs] = useState<FAQItem[]>(INITIAL_FAQS);
 
-  // Modal states
-  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  // Dedicated Page Routing: 'home' | 'order'
+  const [currentView, setCurrentView] = useState<'home' | 'order'>(() => {
+    if (typeof window !== 'undefined') {
+      const p = (window.location.pathname || '').toLowerCase();
+      const h = (window.location.hash || '').toLowerCase();
+      if (p.startsWith('/order') || h.startsWith('#order')) return 'order';
+    }
+    return 'home';
+  });
+
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [selectedMultiplier, setSelectedMultiplier] = useState<number>(1);
 
@@ -34,7 +42,7 @@ export default function App() {
     phone: '',
   });
 
-  // Confirmed / submitted order modal awaiting admin approval
+  // Confirmed / submitted order modal awaiting admin approval (All Details & Export Modal)
   const [confirmedOrder, setConfirmedOrder] = useState<Order | null>(null);
 
   // Admin Dashboard modal (Only accessible via secret URL: domain/techadmin/login)
@@ -59,6 +67,18 @@ export default function App() {
       }
     };
 
+    // Route sync handler for back / forward navigation
+    const handlePopState = () => {
+      checkSecretAdminRoute();
+      const path = (window.location.pathname || '').toLowerCase();
+      const hash = (window.location.hash || '').toLowerCase();
+      if (path.startsWith('/order') || hash.startsWith('#order')) {
+        setCurrentView('order');
+      } else {
+        setCurrentView('home');
+      }
+    };
+
     // Check immediately on mount
     checkSecretAdminRoute();
 
@@ -68,8 +88,8 @@ export default function App() {
     };
 
     window.addEventListener('tpbd:datarefreshed', handleDataRefreshed);
-    window.addEventListener('hashchange', checkSecretAdminRoute);
-    window.addEventListener('popstate', checkSecretAdminRoute);
+    window.addEventListener('hashchange', handlePopState);
+    window.addEventListener('popstate', handlePopState);
     window.addEventListener('focus', handleDataRefreshed);
     window.addEventListener('storage', (e) => {
       if (e.key === 'tpbd_sync_time') {
@@ -96,8 +116,8 @@ export default function App() {
     }, 4000);
 
     return () => {
-      window.removeEventListener('hashchange', checkSecretAdminRoute);
-      window.removeEventListener('popstate', checkSecretAdminRoute);
+      window.removeEventListener('hashchange', handlePopState);
+      window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('tpbd:datarefreshed', handleDataRefreshed);
       window.removeEventListener('focus', handleDataRefreshed);
       clearInterval(pollInterval);
@@ -122,18 +142,31 @@ export default function App() {
     }
   };
 
+  // Open dedicated Order Page (new page view instead of modal popup)
   const handleOpenOrder = (pkg?: Package, multiplier: number = 1) => {
     setSelectedPackage(pkg || packages[0]);
     setSelectedMultiplier(multiplier);
-    setIsOrderModalOpen(true);
+    setCurrentView('order');
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ view: 'order' }, '', '/order');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
     if (pkg) {
       analytics.viewContent(pkg.name, pkg.category, pkg.basePrice);
     }
   };
 
-  // When order is submitted from OrderModal, it is created with status PENDING awaiting Admin approval
-  const handleProceedToPayment = (order: Order) => {
-    setIsOrderModalOpen(false);
+  // Return to Home view
+  const handleBackToHome = () => {
+    setCurrentView('home');
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ view: 'home' }, '', '/');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // When order is submitted from OrderPage, show all details popup with export options
+  const handleOrderCreated = (order: Order) => {
     setConfirmedOrder(order);
   };
 
@@ -145,78 +178,85 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-slate-900 selection:bg-blue-600 selection:text-white pb-14 md:pb-0">
-      {/* Header: No public admin login button */}
-      <Navbar
-        onOrderNowClick={() => handleOpenOrder()}
-        onTrackOrderClick={() => {
-          setTrackOrderPrefill({ orderId: '', phone: '' });
-          setIsTrackOrderOpen(true);
-        }}
-        primaryWhatsapp={settings.primaryWhatsapp}
-      />
-
-      {/* Main Content Sections */}
-      <main className="flex-1">
-        {/* Hero Section with Styled Headline & 500MB Video Support */}
-        <HeroSection
-          onOrderNowClick={() => handleOpenOrder()}
-          heroVideoUrl={settings.heroVideoUrl}
-          heroVideoPoster={settings.heroVideoPoster}
-        />
-
-        {/* Horizontal Trust / Stats Section */}
-        <StatsSection
-          settings={settings}
-          onOrderNowClick={() => handleOpenOrder()}
-        />
-
-        {/* Services & Dynamic Pricing Packages with Bold Category Tabs & Unlimited Volume */}
-        <ServicesSection
-          packages={packages}
-          onSelectPackage={(pkg, mult) => handleOpenOrder(pkg, mult)}
-        />
-
-        {/* 3 Facebook Reels Size (9:16 Vertical) Video Section */}
-        <ReelsSection
-          reels={settings.reels}
-          onOrderNowClick={() => handleOpenOrder()}
-        />
-
-        {/* Why Choose Us */}
-        <WhyChooseUs />
-
-        {/* Frequently Asked Questions */}
-        <FAQSection
-          faqs={faqs}
-          primaryWhatsapp={settings.primaryWhatsapp}
-        />
-      </main>
-
-      {/* Footer: Public admin login removed, updated Refund Policy */}
-      <Footer settings={settings} />
-
-      {/* Mobile Sticky CTA Bar */}
-      <MobileStickyCTA
-        onOrderNowClick={() => handleOpenOrder()}
-        primaryWhatsapp={settings.primaryWhatsapp}
-      />
-
-      {/* Order Modal: bKash / Nagad / Rocket with TrxID and Client Location */}
-      {isOrderModalOpen && (
-        <OrderModal
+      {/* View 1: Dedicated New Order Checkout Page */}
+      {currentView === 'order' ? (
+        <OrderPage
           packages={packages}
           initialPackage={selectedPackage}
           initialMultiplier={selectedMultiplier}
-          onClose={() => setIsOrderModalOpen(false)}
-          onProceedToPayment={handleProceedToPayment}
+          onBackToHome={handleBackToHome}
+          onOrderCreated={handleOrderCreated}
+          primaryWhatsapp={settings.primaryWhatsapp}
         />
+      ) : (
+        /* View 2: Complete Homepage */
+        <>
+          {/* Header */}
+          <Navbar
+            onOrderNowClick={() => handleOpenOrder()}
+            onTrackOrderClick={() => {
+              setTrackOrderPrefill({ orderId: '', phone: '' });
+              setIsTrackOrderOpen(true);
+            }}
+            primaryWhatsapp={settings.primaryWhatsapp}
+          />
+
+          {/* Main Content Sections */}
+          <main className="flex-1">
+            {/* Hero Section with Styled Headline & 500MB Video Support */}
+            <HeroSection
+              onOrderNowClick={() => handleOpenOrder()}
+              heroVideoUrl={settings.heroVideoUrl}
+              heroVideoPoster={settings.heroVideoPoster}
+            />
+
+            {/* Horizontal Trust / Stats Section */}
+            <StatsSection
+              settings={settings}
+              onOrderNowClick={() => handleOpenOrder()}
+            />
+
+            {/* Services & Dynamic Pricing Packages with Bold Category Tabs & Unlimited Volume */}
+            <ServicesSection
+              packages={packages}
+              onSelectPackage={(pkg, mult) => handleOpenOrder(pkg, mult)}
+            />
+
+            {/* 3 Facebook Reels Size (9:16 Vertical) Video Section */}
+            <ReelsSection
+              reels={settings.reels}
+              onOrderNowClick={() => handleOpenOrder()}
+            />
+
+            {/* Why Choose Us */}
+            <WhyChooseUs />
+
+            {/* Frequently Asked Questions */}
+            <FAQSection
+              faqs={faqs}
+              primaryWhatsapp={settings.primaryWhatsapp}
+            />
+          </main>
+
+          {/* Footer */}
+          <Footer settings={settings} />
+
+          {/* Mobile Sticky CTA Bar */}
+          <MobileStickyCTA
+            onOrderNowClick={() => handleOpenOrder()}
+            primaryWhatsapp={settings.primaryWhatsapp}
+          />
+        </>
       )}
 
-      {/* Order Submitted Screen: Pending Admin Approval */}
+      {/* POPUP MODAL: All Order Details & Multi-Format Export Options */}
       {confirmedOrder && (
         <OrderSuccessModal
           order={confirmedOrder}
-          onClose={() => setConfirmedOrder(null)}
+          onClose={() => {
+            setConfirmedOrder(null);
+            handleBackToHome();
+          }}
           onTrackOrder={handleTrackFromSuccess}
           primaryWhatsapp={settings.primaryWhatsapp}
         />
@@ -232,7 +272,7 @@ export default function App() {
         />
       )}
 
-      {/* Secret Admin Portal (Direct URL /techadmin/login) */}
+      {/* Secret Admin Portal (Direct URL domain/techadmin/login) */}
       {isAdminOpen && (
         <AdminDashboard
           onClose={() => {

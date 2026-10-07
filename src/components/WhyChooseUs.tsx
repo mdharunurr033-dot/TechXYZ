@@ -20,7 +20,7 @@ export const WhyChooseUs: React.FC = () => {
     },
     {
       title: 'Secure Payment',
-      description: 'Integrated with Nagorik Pay for automated, SSL-encrypted payments via bKash, Nagad, Rocket and Cards.',
+      description: 'Verified mobile banking payments via bKash, Nagad, and Rocket with fast Admin verification.',
       icon: ShieldCheck,
     },
     {
