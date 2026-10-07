@@ -121,6 +121,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
+  const [actionNotification, setActionNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+    setActionNotification({ message, type });
+    setTimeout(() => {
+      setActionNotification((prev) => (prev?.message === message ? null : prev));
+    }, 4000);
+  };
+
   const loadOrders = async () => {
     if (!token) return;
     setIsLoadingOrders(true);
@@ -139,10 +148,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         const updatedViewing = data.orders.find((o) => o.id === viewingOrder.id);
         if (updatedViewing) setViewingOrder(updatedViewing);
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: unknown) {
+      const error = err as Error;
+      console.warn('Orders sync notice:', error?.message || error);
       setToken('');
-      localStorage.removeItem('tpbd_admin_token');
+      try {
+        localStorage.removeItem('tpbd_admin_token');
+      } catch {}
+      setLoginError('Admin session ended. Please log in to manage orders.');
     } finally {
       setIsLoadingOrders(false);
     }
@@ -157,6 +170,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       if (res.success && res.token) {
         setToken(res.token);
         localStorage.setItem('tpbd_admin_token', res.token);
+        showNotification('Authenticated as administrator', 'success');
       } else {
         setLoginError('Invalid username or password.');
       }
@@ -181,9 +195,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       }
       onRefreshData();
       triggerInstantLiveSync();
+      showNotification('Payment verified and order confirmed successfully!', 'success');
     } catch (err: unknown) {
-      console.error(err);
-      alert((err as Error).message || 'Failed to verify payment');
+      showNotification((err as Error).message || 'Failed to verify payment', 'error');
     }
   };
 
@@ -196,9 +210,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       }
       onRefreshData();
       triggerInstantLiveSync();
-    } catch (err) {
-      console.error(err);
-      alert('Failed to update order status');
+      showNotification('Order status updated successfully', 'success');
+    } catch {
+      showNotification('Failed to update order status', 'error');
     }
   };
 
@@ -210,10 +224,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setEditingPkg(null);
       onRefreshData();
       triggerInstantLiveSync();
-      alert('Package updated successfully! Changes are instantly live on the website.');
-    } catch (err) {
-      console.error(err);
-      alert('Failed to update package');
+      showNotification('Package updated successfully! Changes are live on website.', 'success');
+    } catch {
+      showNotification('Failed to update package', 'error');
     }
   };
 
@@ -225,9 +238,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setTimeout(() => setSettingsSuccess(false), 3000);
       onRefreshData();
       triggerInstantLiveSync();
-    } catch (err) {
-      console.error(err);
-      alert('Failed to update settings');
+      showNotification('Website settings updated live!', 'success');
+    } catch {
+      showNotification('Failed to update settings', 'error');
     }
   };
 
@@ -538,6 +551,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         {/* Tab Content Body */}
         <div className="flex-1 overflow-y-auto p-6">
+          {actionNotification && (
+            <div
+              className={`mb-4 p-3.5 rounded-2xl flex items-center justify-between text-xs font-semibold ${
+                actionNotification.type === 'error'
+                  ? 'bg-rose-50 border border-rose-200 text-rose-800'
+                  : 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+              }`}
+            >
+              <span>{actionNotification.message}</span>
+              <button
+                onClick={() => setActionNotification(null)}
+                className="p-1 hover:opacity-75 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           {/* TAB 1: ORDERS */}
           {activeTab === 'orders' && (
             <div className="space-y-4">

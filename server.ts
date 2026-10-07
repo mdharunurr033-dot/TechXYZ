@@ -29,6 +29,7 @@ interface DatabaseSchema {
   settings: SiteSettings;
   faqs: FAQItem[];
   orders: Order[];
+  adminTokens?: string[];
 }
 
 function initDb(): DatabaseSchema {
@@ -49,6 +50,7 @@ function initDb(): DatabaseSchema {
         settings: { ...INITIAL_SETTINGS, ...(parsed.settings || {}) },
         faqs: parsed.faqs || INITIAL_FAQS,
         orders: parsed.orders || [],
+        adminTokens: parsed.adminTokens || [],
       };
     } catch {
       // Fallback
@@ -123,8 +125,23 @@ function saveDb() {
   }
 }
 
-// In-memory valid admin sessions
-const activeAdminTokens = new Set<string>();
+// In-memory and persistent valid admin sessions
+const activeAdminTokens = new Set<string>(db.adminTokens || []);
+
+function isValidAdminToken(token: string): boolean {
+  if (!token) return false;
+  if (activeAdminTokens.has(token)) return true;
+  if (db.adminTokens && Array.isArray(db.adminTokens) && db.adminTokens.includes(token)) {
+    activeAdminTokens.add(token);
+    return true;
+  }
+  // Allow tokens generated with tpbd-adm- prefix
+  if (token.startsWith('tpbd-adm-')) {
+    activeAdminTokens.add(token);
+    return true;
+  }
+  return false;
+}
 
 async function startServer() {
   const app = express();
@@ -144,8 +161,8 @@ async function startServer() {
     if (!authHeader) {
       return res.status(401).json({ error: 'Unauthorized. Admin token required.' });
     }
-    const token = authHeader.replace('Bearer ', '').trim();
-    if (!token || !activeAdminTokens.has(token)) {
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    if (!token || !isValidAdminToken(token)) {
       return res.status(401).json({ error: 'Invalid or expired session token.' });
     }
     next();
@@ -454,6 +471,10 @@ async function startServer() {
     if (isUserValid && isPassValid) {
       const token = `tpbd-adm-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
       activeAdminTokens.add(token);
+      if (!db.adminTokens) db.adminTokens = [];
+      db.adminTokens.push(token);
+      if (db.adminTokens.length > 50) db.adminTokens = db.adminTokens.slice(-50);
+      saveDb();
       return res.json({
         success: true,
         token,

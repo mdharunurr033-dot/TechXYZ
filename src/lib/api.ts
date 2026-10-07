@@ -194,12 +194,37 @@ export async function fetchAdminOrders(token: string, filter?: { search?: string
   if (filter?.paymentStatus) params.append('paymentStatus', filter.paymentStatus);
   if (filter?.orderStatus) params.append('orderStatus', filter.orderStatus);
 
-  const res = await fetch(`${BASE_URL}/api/admin/orders?${params.toString()}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  try {
+    const res = await fetch(`${BASE_URL}/api/admin/orders?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-  if (!res.ok) throw new Error('Unauthorized or failed to fetch orders');
-  return await res.json();
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        try {
+          localStorage.removeItem('tpbd_admin_token');
+        } catch {}
+      }
+      let errorMsg = 'Unauthorized or failed to fetch orders';
+      try {
+        const data = await res.json();
+        if (data?.error) errorMsg = data.error;
+      } catch {}
+      throw new Error(errorMsg);
+    }
+    return await res.json();
+  } catch (err: unknown) {
+    const error = err as Error;
+    if (error?.message?.includes('Failed to fetch') || error?.message?.includes('NetworkError')) {
+      return {
+        orders: [],
+        totalOrders: 0,
+        paidCount: 0,
+        revenueBDT: 0,
+      };
+    }
+    throw err;
+  }
 }
 
 export async function updateOrderStatus(
