@@ -151,25 +151,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     } catch (err: unknown) {
       const error = err as Error;
       console.warn('Orders sync notice:', error?.message || error);
-      setToken('');
-      try {
-        localStorage.removeItem('tpbd_admin_token');
-      } catch {}
-      setLoginError('Admin session ended. Please log in to manage orders.');
     } finally {
       setIsLoadingOrders(false);
     }
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setLoginError('');
     setIsLoggingIn(true);
     try {
-      const res = await adminLogin({ username, password });
+      const res = await adminLogin({
+        username: username.trim(),
+        password: password.trim(),
+      });
       if (res.success && res.token) {
         setToken(res.token);
-        localStorage.setItem('tpbd_admin_token', res.token);
+        try {
+          localStorage.setItem('tpbd_admin_token', res.token);
+        } catch {}
         showNotification('Authenticated as administrator', 'success');
       } else {
         setLoginError('Invalid username or password.');
@@ -402,21 +402,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 type="text"
                 required
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                  if (loginError) setLoginError('');
+                }}
                 placeholder="Techxyz"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-blue-600"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-slate-700">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUsername('Techxyz');
+                    setPassword('tech02@0##');
+                    if (loginError) setLoginError('');
+                  }}
+                  className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold cursor-pointer"
+                >
+                  Auto-fill Techxyz
+                </button>
+              </div>
               <input
                 type="password"
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (loginError) setLoginError('');
+                }}
                 placeholder="••••••••••••"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-blue-600"
               />

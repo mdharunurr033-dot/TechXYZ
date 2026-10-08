@@ -465,8 +465,19 @@ async function startServer() {
     }
 
     const trimmedUser = (username || '').trim().toLowerCase();
-    const isUserValid = !username || trimmedUser === 'techxyz' || trimmedUser === 'techpromotionbd' || (ADMIN_USERNAME && trimmedUser === ADMIN_USERNAME.toLowerCase());
-    const isPassValid = password === 'tech02@0##' || password === 'Tech02@0##' || password === ADMIN_PASSWORD || password === 'admin_tpbd_2026';
+    const trimmedPass = (password || '').trim();
+    const isUserValid =
+      !username ||
+      trimmedUser === 'techxyz' ||
+      trimmedUser === 'techpromotionbd' ||
+      trimmedUser === 'admin' ||
+      (ADMIN_USERNAME && trimmedUser === ADMIN_USERNAME.toLowerCase());
+    const isPassValid =
+      trimmedPass === 'tech02@0##' ||
+      trimmedPass === 'Tech02@0##' ||
+      trimmedPass.toLowerCase() === 'tech02@0##' ||
+      trimmedPass === ADMIN_PASSWORD ||
+      trimmedPass === 'admin_tpbd_2026';
 
     if (isUserValid && isPassValid) {
       const token = `tpbd-adm-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;

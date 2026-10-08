@@ -277,8 +277,12 @@ export default function App() {
         <AdminDashboard
           onClose={() => {
             setIsAdminOpen(false);
-            if (window.location.hash.startsWith('#techadmin')) {
-              window.history.pushState(null, '', window.location.pathname);
+            if (
+              window.location.pathname.startsWith('/techadmin') ||
+              window.location.hash.startsWith('#techadmin') ||
+              window.location.search.includes('techadmin')
+            ) {
+              window.history.pushState(null, '', '/');
             }
           }}
           siteSettings={settings}
