@@ -324,6 +324,21 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             </div>
           )}
 
+          {/* Ads Expert Callout if ads package */}
+          {currentPkg?.category === 'ads' && (
+            <div className="p-3 bg-blue-50/80 rounded-2xl border border-blue-200 text-xs text-blue-900 flex items-center justify-between">
+              <div>
+                <p className="font-bold text-slate-900">Ads Expert: Harun Ur Rashid Mizan</p>
+                <p className="text-[11px] text-slate-600">
+                  Rate: Meta Ads 1$ = ৳133.20 | Google Ads 1$ = ৳167.69 (Min $20)
+                </p>
+              </div>
+              <span className="font-mono text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-300">
+                +8801601300122
+              </span>
+            </div>
+          )}
+
           {/* Section 1: Customer Info */}
           <div className="space-y-3.5">
             <div>

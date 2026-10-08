@@ -6,6 +6,7 @@ import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { StatsSection } from './components/StatsSection';
 import { ServicesSection } from './components/ServicesSection';
+import { MetaGoogleAdsSection } from './components/MetaGoogleAdsSection';
 import { ReelsSection } from './components/ReelsSection';
 import { WhyChooseUs } from './components/WhyChooseUs';
 import { FAQSection } from './components/FAQSection';
@@ -220,6 +221,13 @@ export default function App() {
             <ServicesSection
               packages={packages}
               onSelectPackage={(pkg, mult) => handleOpenOrder(pkg, mult)}
+            />
+
+            {/* Meta Ads & Google Ads Boosting Section with Live BDT Calculator & Ads Expert */}
+            <MetaGoogleAdsSection
+              adsPackages={packages.filter((p) => p.category === 'ads')}
+              onSelectPackage={(pkg, mult) => handleOpenOrder(pkg, mult)}
+              primaryWhatsapp={settings.primaryWhatsapp}
             />
 
             {/* 3 Facebook Reels Size (9:16 Vertical) Video Section */}

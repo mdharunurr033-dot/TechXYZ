@@ -19,6 +19,7 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({
     { id: 'core', name: 'Core', range: '৳999 – ৳4,999', dot: 'bg-blue-500' },
     { id: 'premium', name: 'Premium', range: '৳5,000 – ৳35,000+', dot: 'bg-purple-500' },
     { id: 'vip', name: 'VIP', range: '৳40,000 – ৳100,000', dot: 'bg-rose-500' },
+    { id: 'ads', name: 'Meta & Google Ads', range: 'Min 20$ (৳133.20/$)', dot: 'bg-amber-500' },
   ];
 
   const filteredPackages = packages.filter((p) => p.category === selectedCategory);

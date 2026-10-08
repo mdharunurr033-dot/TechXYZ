@@ -135,6 +135,7 @@ export const Footer: React.FC<FooterProps> = ({ settings }) => {
               <li><a href="#packages" className="hover:text-white transition-colors">Core Growth Packages</a></li>
               <li><a href="#packages" className="hover:text-white transition-colors">Premium Followers</a></li>
               <li><a href="#packages" className="hover:text-white transition-colors">VIP Enterprise Growth</a></li>
+              <li><a href="#ads-packages" className="text-blue-400 hover:text-blue-300 font-semibold transition-colors flex items-center gap-1">★ Meta & Google Ads (Min $20)</a></li>
             </ul>
           </div>
 

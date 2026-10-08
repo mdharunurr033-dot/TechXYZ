@@ -1,4 +1,4 @@
-export type ServiceCategory = 'entry' | 'core' | 'premium' | 'vip';
+export type ServiceCategory = 'entry' | 'core' | 'premium' | 'vip' | 'ads';
 
 export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
 export type OrderStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'CANCELLED';

@@ -179,6 +179,78 @@ export const INITIAL_PACKAGES: Package[] = [
     optionalOpportunity: 'Up to 5 Pages or Profiles · Up to 20 Videos',
     popularBadge: 'Best Value',
     features: ['1,000,000 Enterprise Reach', '3,000,000 Viral Video Views', '20,000 Organic Likes', '5,000 High-Quality Comments', '2,000 Authentic Shares']
+  },
+
+  // META ADS & GOOGLE ADS CATEGORY
+  {
+    id: 'ads-pkg-1',
+    name: 'Meta Ads (Facebook & Instagram) Boost — Package 1',
+    category: 'ads',
+    quantityLabel: 'Minimum $20 – Maximum $100 Boost',
+    baseQuantity: 20,
+    basePrice: 2664,
+    quantityStep: 5,
+    priceStep: 666,
+    allowQuantityIncrease: true,
+    image: '/src/assets/images/hero_growth_graphic_1791232755953.jpg',
+    description: 'Targeted Meta (Facebook & Instagram) ads campaigns managed by Ads Expert Harun Ur Rashid Mizan (+8801601300122). Rate: 1$ = BDT 133.20.',
+    optionalOpportunity: 'Facebook Page / Video / Post / Lead Form / WhatsApp Link',
+    popularBadge: 'Popular',
+    features: [
+      'Rate: 1$ = BDT 133.20',
+      'Minimum Boost: 20$ (BDT 2,664)',
+      'Maximum Boost: 100$ (BDT 13,320) or Custom',
+      'Custom Boost: Min 20$ to Any Kind Of budget',
+      'Ads Expert: Harun Ur Rashid Mizan',
+      'WhatsApp Consultation: +8801601300122',
+      'Precise Bangladesh & Global audience targeting'
+    ]
+  },
+  {
+    id: 'ads-pkg-2',
+    name: 'Google Ads (Search & YouTube) Boost — Package 1',
+    category: 'ads',
+    quantityLabel: 'Minimum $20 – Maximum $100 Boost',
+    baseQuantity: 20,
+    basePrice: 3354,
+    quantityStep: 5,
+    priceStep: 838,
+    allowQuantityIncrease: true,
+    image: '/src/assets/images/hero_cinematic_banner_1791233752016.jpg',
+    description: 'High-converting Google Search & YouTube Ads managed by Ads Expert Harun Ur Rashid Mizan (+8801601300122). Rate: 1$ = BDT 167.69.',
+    optionalOpportunity: 'Website / YouTube Channel / Landing Page / Business Lead',
+    popularBadge: 'Best Value',
+    features: [
+      'Rate: 1$ = BDT 167.69',
+      'Minimum Boost: 20$ (BDT 3,354)',
+      'Maximum Boost: 100$ (BDT 16,769) or Custom',
+      'Custom Boost: Min 20$ to Any Kind Of budget',
+      'Ads Expert: Harun Ur Rashid Mizan',
+      'WhatsApp Consultation: +8801601300122',
+      'Keyword intent research & YouTube placement'
+    ]
+  },
+  {
+    id: 'ads-pkg-3',
+    name: 'Custom Meta & Google Omnichannel Boost',
+    category: 'ads',
+    quantityLabel: 'Custom 20$ to Any Kind Of Budget',
+    baseQuantity: 20,
+    basePrice: 2664,
+    quantityStep: 10,
+    priceStep: 1332,
+    allowQuantityIncrease: true,
+    image: '/src/assets/images/vip_enterprise_service_1791232746058.jpg',
+    description: 'Flexible advertising boost starting at 20$ up to any budget. Direct strategy and execution by Ads Expert Harun Ur Rashid Mizan.',
+    optionalOpportunity: 'Meta Ads + Google Ads Multi-Channel',
+    features: [
+      'Meta Rate: 1$ = BDT 133.20',
+      'Google Rate: 1$ = BDT 167.69',
+      'Custom Boost: Min 20$ to Any Kind Of budget',
+      'Multi-platform optimization & retargeting',
+      'Direct WhatsApp Call & Chat with Harun Ur Rashid Mizan',
+      'Detailed analytics & performance breakdown'
+    ]
   }
 ];
 
@@ -275,5 +347,10 @@ export const INITIAL_FAQS: FAQItem[] = [
     id: 'faq-9',
     question: 'How can I contact support?',
     answer: 'Our dedicated customer support team is available 24/7 on WhatsApp at +8801601300122 and +8801795315431, or by emailing techpromotionbd@gmail.com. You can also click any "Contact on WhatsApp" button on this website for immediate assistance.'
+  },
+  {
+    id: 'faq-10',
+    question: 'How does Meta Ads & Google Ads Boosting work, and what are the rates?',
+    answer: 'We provide certified sponsored advertising through official Meta (Facebook/Instagram) and Google Ads accounts managed by Ads Expert Harun Ur Rashid Mizan (+8801601300122). Current rates are: Meta Ads 1$ = BDT 133.20, Google Ads 1$ = BDT 167.69. Minimum boost is 20$, Maximum boost for Package 1 is 100$, and Custom Boost allows any budget from 20$ to any amount with live BDT calculation and WhatsApp consultation.'
   }
 ];

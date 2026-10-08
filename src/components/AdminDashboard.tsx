@@ -1829,6 +1829,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <option value="core">Core (৳999 – ৳4,999)</option>
                       <option value="premium">Premium (৳5,000 – ৳35,000)</option>
                       <option value="vip">VIP (৳40,000 – ৳100,000)</option>
+                      <option value="ads">Meta & Google Ads (Min $20)</option>
                     </select>
                   </div>
 

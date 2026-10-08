@@ -385,6 +385,22 @@ export const OrderPage: React.FC<OrderPageProps> = ({
                       ★ {currentPkg.optionalOpportunity}
                     </span>
                   )}
+                  {currentPkg.category === 'ads' && (
+                    <div className="mt-2 p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-[11px] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <strong className="text-slate-900">Ads Expert: Harun Ur Rashid Mizan</strong> (+8801601300122)
+                        <div className="text-slate-600">Rates: Meta Ads 1$ = BDT 133.20 | Google Ads 1$ = BDT 167.69 (Min $20)</div>
+                      </div>
+                      <a
+                        href={`https://wa.me/${primaryWhatsapp.replace(/[^0-9]/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1.5 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 transition-colors shrink-0 text-xs"
+                      >
+                        <span>WhatsApp Chat</span>
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
 

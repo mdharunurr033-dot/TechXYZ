@@ -23,9 +23,22 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-xs transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
         {/* Brand Wordmark & Logo (Left) */}
-        <a href="#home" className="flex items-center group cursor-pointer focus:outline-hidden">
-          <BrandLogo size="md" showTagline={false} />
-        </a>
+        <div className="flex items-center gap-3 sm:gap-5">
+          <a href="#home" className="flex items-center group cursor-pointer focus:outline-hidden">
+            <BrandLogo size="md" showTagline={false} />
+          </a>
+
+          <a
+            href="#ads-packages"
+            className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-extrabold border border-blue-200 transition-colors"
+          >
+            <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+            <span>Meta & Google Ads</span>
+            <span className="text-[10px] text-blue-500 font-bold bg-white px-1.5 py-0.5 rounded-full border border-blue-200">
+              Min $20
+            </span>
+          </a>
+        </div>
 
         {/* Clean Action Controls (Right) — Matches GP Shield reference header */}
         <div className="flex items-center gap-2.5 sm:gap-3">
